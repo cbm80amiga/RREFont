@@ -13,9 +13,10 @@ setScale	KEYWORD2
 setSpacing	KEYWORD2
 setSpacingY	KEYWORD2
 setBold	KEYWORD2
+getWidth	KEYWORD2
 getHeight	KEYWORD2
 printStr	KEYWORD2
-printChar	KEYWORD2
+drawChar	KEYWORD2
 charWidth	KEYWORD2
 strWidth	KEYWORD2
 setIsNumberFun	KEYWORD2

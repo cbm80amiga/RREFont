@@ -52,6 +52,7 @@ public:
   void setCharMinWd(uint8_t wd) { minCharWd = wd; }
   void setDigitMinWd(uint8_t wd) { minDigitWd = wd; }
   unsigned char convertPolish(unsigned char _c);
+  int getWidth() { return rFont ? rFont->wd : 0; }
   int getHeight() { return rFont ? rFont->ht : 0; }
   int charWidthNoSort(uint8_t c, int *_xmin);
   int charWidthOptim(uint8_t c, int *_xmin=0);
