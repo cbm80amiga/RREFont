@@ -30,15 +30,11 @@ void setup()
   font.setFont(&rre_term_10x16);
   lcd.setDither(8);
   lcd.fillRectD(8,8,128-16,64-16,1);
-  //font.setFg(1); font.setBg(-1); font.printStr(0, 0,"ABcdeIMNmn0123");
-  //font.setFg(1); font.setBg( 0); font.printStr(0,16,"ABcdeIMNmn0123");
-  //font.setFg(0); font.setBg(-1); font.printStr(0,32,"ABcdeIMNmn0123");
-  //font.setFg(0); font.setBg( 1); font.printStr(0,48,"ABcdeIMNmn0123");
-  font.setCol(1);   font.printStr(0, 0,"ABcdeIMNmn0123");
-  font.setCol(1,0); font.printStr(0,16,"ABcdeIMNmn0123");
-  font.setCol(0);   font.printStr(0,32,"ABcdeIMNmn0123");
-  font.setCol(0,1); font.printStr(0,48,"ABcdeIMNmn0123");
-  lcd.display();
+  font.setColor(1);   font.printStr(0, 0,"ABcdeIMNmn0123");
+  font.setColor(1,0); font.printStr(0,16,"ABcdeIMNmn0123");
+  font.setColor(0);   font.printStr(0,32,"ABcdeIMNmn0123");
+  font.setColor(0,1); font.printStr(0,48,"ABcdeIMNmn0123");
+  lcd.display(); 
 }
 
 void loop()

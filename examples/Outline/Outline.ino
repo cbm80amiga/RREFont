@@ -30,7 +30,7 @@ void customRectDither(int x, int y, int w, int h, int c) { return lcd.fillRectD(
 
 int outlineD(int x, int y, char *str, int dither)
 {
-  font.setFg(1);
+  font.setColor(1);
   font.setFillRectFun(customRect);
   font.printStr(x-1,y-1,str);
   font.printStr(x-0,y-1,str);
@@ -40,11 +40,11 @@ int outlineD(int x, int y, char *str, int dither)
   font.printStr(x+1,y+1,str);
   font.printStr(x-1,y,str);
   font.printStr(x+1,y,str);
-  font.setFg(0);
+  font.setColor(0);
   font.setFillRectFun(customRectDither);
   lcd.setDither(dither);
   font.printStr(x,y,str);
-  font.setFg(1);
+  font.setColor(1);
   font.setFillRectFun(customRect);
 }
 

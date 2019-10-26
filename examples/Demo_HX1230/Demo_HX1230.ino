@@ -1,12 +1,14 @@
 // RRE font example
 // (C)2019 Pawel A. Hernik
 
-// specific for ST7920 library, insert here your display library header and variable
-#include "ST7920_SPI.h"
+#define LCD_RST 6
+#define LCD_CS  7
+#define LCD_BL  8
+
+#include "HX1230_FB.h"
 #include <SPI.h>
-#define LCD_BACKLIGHT  9
-#define LCD_CS         10
-ST7920_SPI lcd(LCD_CS);
+HX1230_FB lcd(LCD_RST, LCD_CS);
+
 
 #include "RREFont.h"
 #include "rre_8x12.h"
@@ -25,7 +27,7 @@ void customRectDither(int x, int y, int w, int h, int c) { return lcd.fillRectD(
 
 int outlineD(int x, int y, char *str, int dither)
 {
-  font.setFg(1);
+  font.setColor(1);
   font.setFillRectFun(customRect);
   font.printStr(x-1,y-1,str);
   font.printStr(x-0,y-1,str);
@@ -35,11 +37,11 @@ int outlineD(int x, int y, char *str, int dither)
   font.printStr(x+1,y+1,str);
   font.printStr(x-1,y,str);
   font.printStr(x+1,y,str);
-  font.setFg(0);
+  font.setColor(0);
   font.setFillRectFun(customRectDither);
   lcd.setDither(dither);
   font.printStr(x,y,str);
-  font.setFg(1);
+  font.setColor(1);
   font.setFillRectFun(customRect);
 }
 
@@ -49,8 +51,8 @@ void setup()
 {
   Serial.begin(9600);
 
-  pinMode(LCD_BACKLIGHT, OUTPUT);
-  digitalWrite(LCD_BACKLIGHT, HIGH);
+  pinMode(LCD_BL, OUTPUT);
+  digitalWrite(LCD_BL, HIGH);
   lcd.init();
   lcd.cls();
 
@@ -82,8 +84,8 @@ void loop()
   font.setCR(0);
   font.setFillRectFun(customRect);
   font.setFont(&rre_8x12);
-  font.printStr(16,4,"Regular text:\nABCDabcd0123");
-  outlineD(16,36,"Outline text:\nABCDabcd0123",16);
+  font.printStr(1,4,"Regular text:\nABCDabcd0123");
+  outlineD(1,36,"Outline text:\nABCDabcd0123",16);
   lcd.display();
   delay(4000);
 
@@ -121,7 +123,7 @@ void loop()
 
   // 4 big digits, outline with dithered inside
   for(i=cnt=0;i<100;i++) {
-    snprintf(buf,5,"%04u",cnt);
+    snprintf(buf,5,"%03u",cnt);
     //font.setFont(&rre_ArialDig47b);
     font.setFont(&rre_ArialDig47n);
     lcd.cls();
@@ -134,7 +136,7 @@ void loop()
 
 
   // 13x20 digits test
-  for(i=cnt=0;i<400;i++) {
+  for(i=cnt=0;i<300;i++) {
     font.setFont(&rre_Bold13x20);
     lcd.cls();
     font.setCharMinWd(13);
@@ -156,7 +158,7 @@ void loop()
 
 
   // 13x20 digits test + scale Y and X
-  for(i=cnt=0;i<400;i++) {
+  for(i=cnt=0;i<300;i++) {
     font.setFont(&rre_Bold13x20);
     lcd.cls();
     font.setCharMinWd(13);
