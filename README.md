@@ -26,3 +26,6 @@ Tested with:
 - own ST7789 SPI + Adafruit GFX Library
 - own ILI9327, ST7781 TFT libs
 
+If you find it useful and want to buy me a coffee or a beer:
+
+https://www.paypal.me/cbm80amiga
