@@ -6,9 +6,21 @@
 
 #include <Arduino.h>
 
-// only regular rect modes 16,24,32 supported in optimized mode
-// saves about 4KB of flash
-//#define REDUCE_MEM
+// -------  CONFIG ---------
+// saves 400 bytes
+#define CONVERT_PL_CHARS 0
+// saves 720 bytes
+#define ENABLE_NOSORT    0
+// disable unused types to save memory (up to 4100 bytes)
+#define ENABLE_RRE_16B   1
+#define ENABLE_RRE_24B   1
+#define ENABLE_RRE_32B   1
+#define ENABLE_RRE_V16B  1
+#define ENABLE_RRE_H16B  1
+#define ENABLE_RRE_V24B  1
+#define ENABLE_RRE_H24B  1
+// --------------------------
+
 
 #define RRE_16B     0    // 16x16 pixels, rects (X4Y4W4H4)
 #define RRE_V16B    1    // 64x32 pixels, lines (X6Y5W0H5)
