@@ -418,7 +418,7 @@ int RREFont::printStr(int xpos, int ypos, char *str)
 // callbacks
 bool RREFont::isNumber(uint8_t ch)
 {
-  return isdigit(ch) || ch==' ';
+  return isdigit(ch) || ch==' ' || ch=='-';
 }
 
 bool RREFont::isNumberExt(uint8_t ch)
