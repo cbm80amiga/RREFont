@@ -46,6 +46,7 @@ To avoid flickering draw chars to the buffer in RAM then render it to LCD using 
 - RRE fonts can be easily scaled in both directions
 - this library can be used also for rendering bitmaps (which in RRE format use much less memory)
 - special vertical or horizontal lines mode supported for special applications
+- separate pixels mode supported too
 - the most efficient for large color LCDs
 - there are over 40 various size fonts included
 - antialiased fonts
@@ -101,6 +102,7 @@ int drawChar(int x, int y, unsigned char c)
   Draws single character
 int printStr(int xpos, int ypos, char *str)
   Draws char* string
+```
 
 ## Support
 
