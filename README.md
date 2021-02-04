@@ -75,7 +75,7 @@ void setBg(int _bg)
 void setColor(int c)
 void setColor(int c, int _bg)
    setFg/setBg are obsolete, use setColor to change background/foreground colors
-   Tf background and foreground are the same only foreground color is used to render (transparent background)
+   If background and foreground are the same only foreground color is used to render (transparent background)
 void setBold(uint8_t _bold)
   Sets bold mode
 void setSpacing(uint8_t sp)
