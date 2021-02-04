@@ -56,7 +56,7 @@ To avoid flickering draw chars to the buffer in RAM then render it to LCD using 
 ## Tested with:
 - own ST7920 gfx library
 - SSD1306 OLED + Adafruit GFX Library
-- own ST7725/ST7789 SPI + Adafruit GFX Library
+- own ST7735/ST7789/ILI9341 SPI + Adafruit GFX Library
 - own ILI9327, ST7781 TFT libs
 
 ## Most used methods
