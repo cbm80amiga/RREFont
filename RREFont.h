@@ -1,34 +1,41 @@
 // RRE Font support library
-// (c) 2019 by Pawel A. Hernik
+// (c) 2019-21 by Pawel A. Hernik
 
 #ifndef _RRE_FONT_H
 #define _RRE_FONT_H 
 
 #include <Arduino.h>
 
-// -------  CONFIG ---------
-// saves 400 bytes
-#define CONVERT_PL_CHARS 0
-// saves 720 bytes
-#define ENABLE_NOSORT    0
-// disable unused types to save memory (up to 4100 bytes)
-#define ENABLE_RRE_16B   1
-#define ENABLE_RRE_24B   1
-#define ENABLE_RRE_32B   1
-#define ENABLE_RRE_V16B  1
-#define ENABLE_RRE_H16B  1
-#define ENABLE_RRE_V24B  1
-#define ENABLE_RRE_H24B  1
-// --------------------------
+// ---------  CONFIG ----------
+// adds 400 bytes
+#define CONVERT_PL_CHARS    1
+// adds 720 bytes
+#define ENABLE_NOSORT       0
+// enable only unused types to save memory (up to 4-5 kbytes)
+#define ENABLE_RRE_16B      1
+#define ENABLE_RRE_24B      1
+#define ENABLE_RRE_32B      1
+#define ENABLE_RRE_V16B     1
+#define ENABLE_RRE_V16B_BG  1  // support for non-flickering background clear
+#define ENABLE_RRE_H16B     1
+#define ENABLE_RRE_H16B_BG  1
+#define ENABLE_RRE_V24B     1
+#define ENABLE_RRE_V24B_BG  1
+#define ENABLE_RRE_H24B     1
+#define ENABLE_RRE_H24B_BG  0
+#define ENABLE_RRE_P8B      0
+#define ENABLE_RRE_P16B     1
+// ----------------------------
 
-
-#define RRE_16B     0    // 16x16 pixels, rects (X4Y4W4H4)
-#define RRE_V16B    1    // 64x32 pixels, lines (X6Y5W0H5)
-#define RRE_H16B    2    // 32x64 pixels, lines (X5Y6W5H0)
-#define RRE_24B     3    // 64x64 pixels, rects (X6Y6W6H6)
-#define RRE_V24B    4    // 256x256 pixels, vertical lines (X8Y8W0H8)
-#define RRE_H24B    5    // 256x256 pixels, horizontal lines (X8Y8W8H0)
-#define RRE_32B     6    // 256x256 pixels, rects (X8Y8W8H8)
+#define RRE_16B     0    // 16x16, rects (X4Y4W4H4)
+#define RRE_V16B    1    // 64x32, lines (X6Y5W0H5)
+#define RRE_H16B    2    // 32x64, lines (X5Y6W5H0)
+#define RRE_24B     3    // 64x64, rects (X6Y6W6H6)
+#define RRE_V24B    4    // 256x256, vertical   lines (X8Y8W0H8)
+#define RRE_H24B    5    // 256x256, horizontal lines (X8Y8W8H0)
+#define RRE_32B     6    // 256x256, rects (X8Y8W8H8)
+#define RRE_P8B     7    // 16x16,   pixels (X4Y4W0H0)
+#define RRE_P16B    8    // 256x256, pixels (X8Y8W0H0)
 #define RRE_NO_SORT 0x80 // old fonts not optimized for fast width calculation
 
 #define ALIGN_LEFT    0
