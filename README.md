@@ -10,6 +10,8 @@ https://youtu.be/BJRCe_FB0vI
 
 https://youtu.be/OOvzmHcou4E 
 
+https://youtu.be/C6NsHxKbiVg
+
 ## Configuration
 
 In RREFont.h use following flags:
@@ -49,7 +51,7 @@ To avoid flickering draw chars to the buffer in RAM then render it to LCD using 
 - separate pixels mode supported too
 - the most efficient for large color LCDs
 - there are over 40 various size fonts included
-- antialiased fonts
+- antialiased fonts are possible https://github.com/cbm80amiga/ST7735_antialiased_rre_fonts
 
 ## Requirements:
 - any Arduino graphics library supporting "fillRect()" function
