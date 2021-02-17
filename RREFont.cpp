@@ -447,12 +447,14 @@ int RREFont::printStr(int xpos, int ypos, char *str)
 
   while(*str) {
     char ch = *str++;
-    int wd = drawChar(x,y,ch);
-    x+=wd;
-    if((cr && x>=scrWd) || ch==10) { 
-      x = cr ? 0 : xpos; 
-      y += rFont->ht * sy + spacingY; 
+    int wd = charWidth(ch);
+    if(ch==10 || cr && x+wd>=scrWd) { 
+      x = xpos; 
+      y += rFont->ht * sy + spacingY;
+      if(ch==10) continue;
     }
+    drawChar(x,y,ch);
+    x+=wd;
   }
   return x;
 }
