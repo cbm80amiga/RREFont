@@ -118,7 +118,7 @@ const unsigned short fontArialDig150b_CharOffs[28] PROGMEM = {
 	0x0005, 0x009d, 0x00d0, 0x018a, 0x0255, 0x02b3, 0x0347, 0x0415, 0x0470, 0x0559, 0x0627, 0x0629, 
 };
 
-RRE_Font rre_ArialDig150b = { RRE_32B, 104,146, 0x20, 0x3a, (const uint8_t*)fontarialb_Rects, (const uint16_t*)fontarialb_CharOffs };
+RRE_Font rre_ArialDig150b = { RRE_32B, 104,146, 0x20, 0x3a, (const uint8_t*)fontArialDig150b_Rects, (const uint16_t*)fontArialDig150b_CharOffs };
 
 #endif
 

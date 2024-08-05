@@ -1,5 +1,5 @@
-// RRE Font support library
-// (c) 2019-21 by Pawel A. Hernik
+// RRE Font library
+// (c) 2019-24 by Pawel A. Hernik
 
 #include "RREFont.h"
 
@@ -30,6 +30,7 @@ void RREFont::setFont(RRE_Font *f)
 }
 
 // ---------------------------------
+// used only for very old fonts where last rect was not placed at max X
 int RREFont::charWidthNoSort(uint8_t c, int *_xmin) 
 {
   if(c<rFont->firstCh || c>rFont->lastCh) return c==' ' ? rFont->wd/2 : 0;
@@ -92,13 +93,13 @@ int RREFont::charWidthNoSort(uint8_t c, int *_xmin)
 }
 
 // ----------------------------------------------------------------
-int RREFont::charWidthOptim(uint8_t c, int *_xmin)
+// char width taken from last rect (with max X)
+int RREFont::charWidth(uint8_t c)
 {
   if(c<rFont->firstCh || c>rFont->lastCh) return c==' '? rFont->wd/2 : 0;
   uint16_t recIdx = pgm_read_word(&(rFont->offs[c-rFont->firstCh]));
   uint16_t recNum = pgm_read_word(&(rFont->offs[c-rFont->firstCh+1]))-recIdx;
-  if(!recNum) return rFont->wd/2;
-  if(_xmin) *_xmin=0;
+  if(!recNum) return c==' ' ? rFont->wd/2 : 0;
   int chWd = rFont->wd;
   int lastIdx = recNum-1+recIdx;
   switch(rFont->type & 0xf) {
@@ -125,11 +126,8 @@ int RREFont::charWidthOptim(uint8_t c, int *_xmin)
       break;
 #endif
 #if ENABLE_RRE_V16B==1
-    case RRE_V16B: {
-      uint16_t *rects = (uint16_t*)rFont->rects;
-      uint16_t v = pgm_read_word(&rects[lastIdx]);
-      chWd = (v & 0x3f)+1;
-      }
+    case RRE_V16B:
+      chWd = (pgm_read_word(rFont->rects+lastIdx*2) & 0x3f)+1;
       break;
 #endif
 #if ENABLE_RRE_H16B==1
@@ -141,10 +139,8 @@ int RREFont::charWidthOptim(uint8_t c, int *_xmin)
       break;
 #endif
 #if ENABLE_RRE_V24B==1
-    case RRE_V24B: {
-      uint8_t *rects = (uint8_t*)rFont->rects + lastIdx*3;
-      chWd = pgm_read_byte(&rects[0])+1;
-      }
+    case RRE_V24B:
+      chWd = pgm_read_byte(rFont->rects + lastIdx*3)+1;
       break;
 #endif
 #if ENABLE_RRE_H24B==1
@@ -154,14 +150,14 @@ int RREFont::charWidthOptim(uint8_t c, int *_xmin)
       }
       break;
 #endif
-#if ENABLE_RRE_P164B==1
-    case RRE_P16B:
-      chWd = pgm_read_byte(rFont->rects+lastIdx*2)+1;
-      break;
-#endif
 #if ENABLE_RRE_P8B==1
     case RRE_P8B:
       chWd = (pgm_read_byte(rFont->rects+lastIdx)&0xf)+1;
+      break;
+#endif
+#if ENABLE_RRE_P16B==1
+    case RRE_P16B:
+      chWd = pgm_read_byte(rFont->rects+lastIdx*2)+1;
       break;
 #endif
   }
@@ -169,16 +165,18 @@ int RREFont::charWidthOptim(uint8_t c, int *_xmin)
 }
 
 // ----------------------------------------------------------------
-int RREFont::charWidth(uint8_t c, int *_xmin)
+// charWidth + spacing, multiplied by scale
+int RREFont::charWidthFull(uint8_t c)
 {
 #if CONVERT_PL_CHARS==1
   c = convertPolish(c);
 #endif
 #if ENABLE_NOSORT==1
-  int wd = (rFont->type & RRE_NO_SORT) ? charWidthNoSort(c,_xmin) : charWidthOptim(c,_xmin);
+  int wd = (rFont->type & RRE_NO_SORT) ? charWidthNoSort(c,_xmin) : charWidth(c);
 #else
-  int wd = charWidthOptim(c,_xmin);
+  int wd = charWidth(c);
 #endif
+  if(wd<=0) return 0;
   int wdL = 0, wdR = spacing; // default spacing before and behind char
   if((*isNumberFun)(c) && minDigitWd>0) {
     if(minDigitWd>wd) {
@@ -199,16 +197,16 @@ int RREFont::drawChar(int x, int y, unsigned char c)
   c = convertPolish(c);
 #endif
   if(x>=scrWd || y>=scrHt || x+rFont->wd*sx-1<0 || y+rFont->ht*sy-1<0) return 0;
-  if(c<rFont->firstCh || c>rFont->lastCh) return charWidth(c);
-  uint16_t recIdx = pgm_read_word(&(rFont->offs[c-rFont->firstCh]));
-  uint16_t recNum = pgm_read_word(&(rFont->offs[c-rFont->firstCh+1]))-recIdx;
+  if((c<rFont->firstCh || c>rFont->lastCh) && c!=' ') return 0;
+
+  int xmin=0; // left for compatibility with old NoSort fonts
 #if ENABLE_NOSORT==1
-  int xmin, chWd = (rFont->type & RRE_NO_SORT) ? charWidthNoSort(c,&xmin) : charWidthOptim(c,&xmin);
+  int chWd = (rFont->type & RRE_NO_SORT) ? charWidthNoSort(c,&xmin) : charWidth(c);
 #else
-  int xmin, chWd = charWidthOptim(c,&xmin);
+  int chWd = charWidth(c);
 #endif
-  int wd=chWd, wdL = 0, wdR = spacing;
-  if((*isNumberFun)(c) && minDigitWd>0) {
+  int wd = chWd, wdL = 0, wdR = spacing;
+  if(minDigitWd>0 && (*isNumberFun)(c)) {
     if(minDigitWd>wd) {
       wdL = (minDigitWd-wd)/2;
       wdR += (minDigitWd-wd-wdL);
@@ -223,13 +221,17 @@ int RREFont::drawChar(int x, int y, unsigned char c)
   wd+=wdR+wdL;
   int type = rFont->type & 0xf;
 #if ENABLE_RRE_V16B_BG==1 || ENABLE_RRE_H16B_BG==1 || ENABLE_RRE_V24B_BG==1 || ENABLE_RRE_H24B_BG==1
-  if(bg!=fg && (!recNum || type==RRE_16B ||type==RRE_24B ||type==RRE_32B))
+  if(bg!=fg && (c==' ' || type==RRE_16B || type==RRE_24B || type==RRE_32B || type==RRE_P8B || type==RRE_P16B))
 #else
   if(bg!=fg)
-#endif
+#endif 
     (*fillRectFun)(x, y, (wd+bold)*sx, rFont->ht*sy, bg);
+
+  if(c==' ') return (wd+bold)*sx;
+  uint16_t recIdx = pgm_read_word(&(rFont->offs[c-rFont->firstCh]));
+  uint16_t recNum = pgm_read_word(&(rFont->offs[c-rFont->firstCh+1]))-recIdx;
+  if(!recNum) return 0;
   x+=wdL*sx;
-  if(!recNum) return (wd+bold)*sx;
   switch(type) {
 #if ENABLE_RRE_16B==1
     case RRE_16B:
@@ -276,25 +278,27 @@ int RREFont::drawChar(int x, int y, unsigned char c)
       if(bg!=fg) {
         if(wdL>0) (*fillRectFun)(x-wdL*sx, y, wdL*sx, rFont->ht*sy, bg);
         uint16_t *rects = (uint16_t*)rFont->rects+recIdx;
-        int idx=0;
-        while(idx<recNum) {
-          uint16_t v = pgm_read_word(rects+idx);
+        yf=hf=0;
+        uint16_t v;
+        int yb,hb,xfo=0;
+        for(int i=0; i<recNum; i++) {
+          v = pgm_read_word(rects+i);
           xf = (v & 0x3f)-xmin;
-          int ybg=0,xfCur=xf;
-          while(xf==xfCur && idx<recNum) {
-            v = pgm_read_word(rects+idx);
-            yf = (v>>6) & 0x1f;
-            hf = ((v>>11) & 0x1f)+1;
-            if(yf>ybg) (*fillRectFun)(x+xfCur*sx, y+ybg*sy, 1*sx, (yf-ybg)*sy, bg);
-            ybg = yf+hf;
-            (*fillRectFun)(x+xfCur*sx, y+yf*sy, bold+1*sx, hf*sy, fg);
-            idx++;
-            v = pgm_read_word(rects+idx);
-            xf = (v & 0x3f)-xmin;
+          if(xf!=xfo) {
+            if(xf-xfo>1) (*fillRectFun)(x+(xfo+1)*sx, y, (xf-xfo-1)*sx, rFont->ht*sy, bg);
+            (*fillRectFun)(x+xfo*sx, y+(yf+hf)*sy, 1*sx, (rFont->ht-yf-hf)*sy, bg);
+            yf=hf=0;
           }
-          // last bg line
-          if(ybg<rFont->ht) (*fillRectFun)(x+xfCur*sx, y+ybg*sy, bold+1*sx, (rFont->ht-ybg)*sy, bg);
+          yb = yf+hf;
+          yf = (v>>6) & 0x1f;
+          hf = ((v>>11) & 0x1f)+1;
+          hb = yf-yb;
+          (*fillRectFun)(x+xf*sx, y+yb*sy,      1*sx, hb*sy, bg);
+          (*fillRectFun)(x+xf*sx, y+yf*sy, bold+1*sx, hf*sy, fg);
+          xfo=xf;
         }
+        (*fillRectFun)(x+xfo*sx, y+(yf+hf)*sy, 1*sx, (rFont->ht-yf-hf)*sy, bg);
+        
         if(wdR>0) (*fillRectFun)(x+chWd*sx, y, wdR*sx, rFont->ht*sy, bg);
       } else
 #endif
@@ -314,31 +318,102 @@ int RREFont::drawChar(int x, int y, unsigned char c)
 #if ENABLE_RRE_H16B_BG==1
       if(bg!=fg) {
         if(wdL>0) (*fillRectFun)(x-wdL*sx, y, wdL*sx, rFont->ht*sy, bg);
-        uint16_t *rects = (uint16_t*)rFont->rects;
-        int idx=0,yfCur=0;
-        while(idx<recNum) {
-          uint16_t v = pgm_read_word(rects+idx+recIdx);
+        /*
+        // fast but very complex
+        uint16_t *rects = (uint16_t*)rFont->rects+recIdx;
+        xf=wf=0;
+        int xfend,yfend,wfend;
+        uint16_t v;
+        v = pgm_read_word(rects+recNum-1);
+        yfend = (v>>5) & 0x3f;
+        xfend = v & 0x1f;
+        wfend = ((v>>11) & 0x1f)+1;
+        int xb,wb,yfo=0;
+        for(int i=0; i<recNum-1; i++) {
+          v = pgm_read_word(rects+i);
           yf = (v>>5) & 0x3f;
-          if(yf-yfCur>1 /*|| (yf-yfCur>0 && yfCur==0)*/) (*fillRectFun)(x+0*sx, y+yfCur*sy, chWd*sx, (yf-yfCur)*sy, bg);
-          //Serial.print(idx); Serial.print("  "); Serial.print(yf); Serial.print("  "); Serial.println(yfCur);
-          yfCur=yf;
-          int xbg=0;
-          while(yf==yfCur && idx<recNum) {
-            xf = v & 0x1f;
-            wf = ((v>>11) & 0x1f)+1;
-            if(xf>xbg) (*fillRectFun)(x+xbg*sx, y+yf*sy, (xf-xbg)*sx, 1*sy, bg);
-            xbg = xf+wf;
-            //if(idx==recNum-1) fg=0x07E0; else fg=0xffff;
-            (*fillRectFun)(x+xf*sx, y+yf*sy, bold+wf*sx, 1*sy, fg);
-            idx++;
-            v = pgm_read_word(rects+idx+recIdx);
-            yf = (v>>5) & 0x3f;
+          if(yf!=yfo) { // yf = next column
+            if(yfend==yfo) { // if current column = yfend rect finish with yfrect
+              xb = xf+wf;
+              xf = xfend;
+              wf = wfend;
+              wb = xf-xb;
+              (*fillRectFun)(x+xb*sx, y+yfend*sy,      wb*sx, 1*sy, bg);
+              (*fillRectFun)(x+xf*sx, y+yfend*sy, bold+wf*sx, 1*sy, fg);
+            }
+            if(yfend>yfo && yfend<yf) { // if empty columns check yfend rect
+              xb = 0;
+              xf = xfend;
+              wf = wfend;
+              wb = xf-xb;
+              (*fillRectFun)(x+xb*sx, y+yfend*sy,      wb*sx, 1*sy, bg);
+              (*fillRectFun)(x+xf*sx, y+yfend*sy, bold+wf*sx, 1*sy, fg);
+            }
+            if(yf-yfo>1) { // if empty columns - fill with bg color
+              if(yfend<yf && yfend>yfo) {
+                (*fillRectFun)(x, y+(yfo+1)*sy, chWd*sx, (yfend-yfo-1)*sy, bg);
+                (*fillRectFun)(x, y+(yfend+1)*sy, chWd*sx, (yf-yfend-1)*sy, bg);
+              } else
+                (*fillRectFun)(x, y+(yfo+1)*sy, chWd*sx, (yf-yfo-1)*sy, bg);
+            }
+            (*fillRectFun)(x+(xf+wf)*sx, y+yfo*sy, (chWd-xf-wf)*sx, 1*sy, bg);
+            xf=wf=0;
           }
-          // last bg line
-          if(xbg<chWd) (*fillRectFun)(x+xbg*sx, y+yfCur*sy, (chWd-xbg)*sx, 1*sy, bg);
-          //Serial.print(idx); Serial.print(" ++ "); Serial.print(yf); Serial.print("  "); Serial.println(yfCur);
-          if(idx==recNum-1 && yfCur<rFont->ht) (*fillRectFun)(x+0*sx, y+yfCur*sy, chWd*sx, (yfCur<rFont->ht-yfCur)*sy, bg);
+          xb = xf+wf;
+          xf = v & 0x1f;
+          wf = ((v>>11) & 0x1f)+1;
+          wb = xf-xb;
+          (*fillRectFun)(x+xb*sx, y+yf*sy,      wb*sx, 1*sy, bg);
+          (*fillRectFun)(x+xf*sx, y+yf*sy, bold+wf*sx, 1*sy, fg);
+          yfo=yf;
         }
+
+        yf = rFont->ht;
+        if(yfend==yfo) {
+          xb = xf+wf;
+          xf = xfend;
+          wf = wfend;
+          wb = xf-xb;
+          (*fillRectFun)(x+xb*sx, y+yfend*sy,      wb*sx, 1*sy, bg);
+          (*fillRectFun)(x+xf*sx, y+yfend*sy, bold+wf*sx, 1*sy, fg);
+        }
+        if(yfend>yfo) {
+          xb = 0;
+          xf = xfend;
+          wf = wfend;
+          wb = xf-xb;
+          (*fillRectFun)(x+xb*sx, y+yfend*sy,      wb*sx, 1*sy, bg);
+          (*fillRectFun)(x+xf*sx, y+yfend*sy, bold+wf*sx, 1*sy, fg);
+        }
+        if(yf-yfo>1) {
+          if(yfend<rFont->ht && yfend>yfo) {
+            (*fillRectFun)(x, y+(yfo+1)*sy, chWd*sx, (yfend-yfo-1)*sy, bg);
+            (*fillRectFun)(x, y+(yfend+1)*sy, chWd*sx, (yf-yfend-1)*sy, bg);
+          } else
+            (*fillRectFun)(x, y+(yfo+1)*sy, chWd*sx, (yf-yfo-1)*sy, bg);
+        }
+        (*fillRectFun)(x+(xf+wf)*sx, y+yfo*sy, (chWd-xf-wf)*sx, 1*sy, bg);
+        */
+        // simple but slower
+        for(int yy=0; yy<rFont->ht; yy++) {
+          int xb,wb;
+          xf=wf=0;
+          uint16_t v,*rects = (uint16_t*)rFont->rects+recIdx;
+          for(int i=0; i<recNum; i++) {
+            v = pgm_read_word(rects+i);
+            yf = (v>>5) & 0x3f;
+            if(yf==yy) {
+              xb = xf+wf;
+              xf = v & 0x1f;
+              wf = ((v>>11) & 0x1f)+1;
+              wb = xf-xb;
+              (*fillRectFun)(x+xb*sx, y+yf*sy,      wb*sx, 1*sy, bg);
+              (*fillRectFun)(x+xf*sx, y+yf*sy, bold+wf*sx, 1*sy, fg);
+            }
+          }
+          (*fillRectFun)(x+(xf+wf)*sx, y+yy*sy, (chWd-xf-wf)*sx, 1*sy, bg);
+        }
+
         if(wdR>0) (*fillRectFun)(x+chWd*sx, y, wdR*sx, rFont->ht*sy, bg);
       } else
 #endif
@@ -358,6 +433,8 @@ int RREFont::drawChar(int x, int y, unsigned char c)
 #if ENABLE_RRE_V24B_BG==1
       if(bg!=fg) {
         if(wdL>0) (*fillRectFun)(x-wdL*sx, y, wdL*sx, rFont->ht*sy, bg);
+        /*
+        // old version
         uint8_t *rects = (uint8_t*)rFont->rects + recIdx*3;
         int idx=0;
         while(idx<recNum*3) {
@@ -372,9 +449,30 @@ int RREFont::drawChar(int x, int y, unsigned char c)
             idx += 3;
             xf = pgm_read_byte(rects+idx+0);
           }
-          // last bg line
           if(ybg<rFont->ht) (*fillRectFun)(x+xfCur*sx, y+ybg*sy, bold+1*sx, (rFont->ht-ybg)*sy, bg);
         }
+        */
+        // assumed that last rect used for width calculation will be always at the bottom (last y)
+        uint8_t *rects = (uint8_t*)rFont->rects + recIdx*3;
+        yf=hf=0;
+        uint16_t v;
+        int yb,hb,xfo=0;
+        for(int i=0; i<recNum*3; i+=3) {
+          xf = pgm_read_byte(rects+i+0);
+          if(xf!=xfo) {
+            if(xf-xfo>1) (*fillRectFun)(x+(xfo+1)*sx, y, (xf-xfo-1)*sx, rFont->ht*sy, bg);
+            (*fillRectFun)(x+xfo*sx, y+(yf+hf)*sy, 1*sx, (rFont->ht-yf-hf)*sy, bg);
+            yf=hf=0;
+          }
+          yb = yf+hf;
+          yf = pgm_read_byte(rects+i+1);
+          hf = pgm_read_byte(rects+i+2)+1;
+          hb = yf-yb;
+          (*fillRectFun)(x+xf*sx, y+yb*sy,      1*sx, hb*sy, bg);
+          (*fillRectFun)(x+xf*sx, y+yf*sy, bold+1*sx, hf*sy, fg);
+          xfo=xf;
+        }
+        (*fillRectFun)(x+xfo*sx, y+(yf+hf)*sy, 1*sx, (rFont->ht-yf-hf)*sy, bg);
         if(wdR>0) (*fillRectFun)(x+chWd*sx, y, wdR*sx, rFont->ht*sy, bg);
       } else
 #endif
@@ -390,6 +488,106 @@ int RREFont::drawChar(int x, int y, unsigned char c)
 #endif
 #if ENABLE_RRE_H24B==1
     case RRE_H24B:
+#if ENABLE_RRE_H24B_BG==1
+      if(bg!=fg) {
+        if(wdL>0) (*fillRectFun)(x-wdL*sx, y, wdL*sx, rFont->ht*sy, bg);
+        /*
+        // fast but very complex, to solve issue with ':' and similar
+        uint8_t *rects = (uint8_t*)rFont->rects+(recIdx+recNum-1)*3;
+        xf=wf=0;
+        int xfend,yfend,wfend;
+        yfend = pgm_read_byte(&rects[1]);
+        xfend = pgm_read_byte(&rects[0]);
+        wfend = pgm_read_byte(&rects[2])+1;
+        int xb,wb,yfo=0;
+        for(int i=0; i<recNum-1; i++) {
+          rects = (uint8_t*)rFont->rects+(recIdx+i)*3;
+          yf = pgm_read_byte(&rects[1]);
+          if(yf!=yfo) { // yf = next column
+            if(yfend==yfo) { // if current column = yfend rect finish with yfrect
+              xb = xf+wf;
+              xf = xfend;
+              wf = wfend;
+              wb = xf-xb;
+              (*fillRectFun)(x+xb*sx, y+yfend*sy,      wb*sx, 1*sy, bg);
+              (*fillRectFun)(x+xf*sx, y+yfend*sy, bold+wf*sx, 1*sy, fg);
+            }
+            if(yfend>yfo && yfend<yf) { // if empty columns check yfend rect
+              xb = 0;
+              xf = xfend;
+              wf = wfend;
+              wb = xf-xb;
+              (*fillRectFun)(x+xb*sx, y+yfend*sy,      wb*sx, 1*sy, bg);
+              (*fillRectFun)(x+xf*sx, y+yfend*sy, bold+wf*sx, 1*sy, fg);
+            }
+            if(yf-yfo>1) { // if empty columns - fill with bg color
+              if(yfend<yf && yfend>yfo) {
+                (*fillRectFun)(x, y+(yfo+1)*sy, chWd*sx, (yfend-yfo-1)*sy, bg);
+                (*fillRectFun)(x, y+(yfend+1)*sy, chWd*sx, (yf-yfend-1)*sy, bg);
+              } else
+                (*fillRectFun)(x, y+(yfo+1)*sy, chWd*sx, (yf-yfo-1)*sy, bg);
+            }
+            (*fillRectFun)(x+(xf+wf)*sx, y+yfo*sy, (chWd-xf-wf)*sx, 1*sy, bg);
+            xf=wf=0;
+          }
+          xb = xf+wf;
+          xf = pgm_read_byte(&rects[0]);
+          wf = pgm_read_byte(&rects[2])+1;
+          wb = xf-xb;
+          (*fillRectFun)(x+xb*sx, y+yf*sy,      wb*sx, 1*sy, bg);
+          (*fillRectFun)(x+xf*sx, y+yf*sy, bold+wf*sx, 1*sy, fg);
+          yfo=yf;
+        }
+
+        yf = rFont->ht;
+        if(yfend==yfo) {
+          xb = xf+wf;
+          xf = xfend;
+          wf = wfend;
+          wb = xf-xb;
+          (*fillRectFun)(x+xb*sx, y+yfend*sy,      wb*sx, 1*sy, bg);
+          (*fillRectFun)(x+xf*sx, y+yfend*sy, bold+wf*sx, 1*sy, fg);
+        }
+        if(yfend>yfo) {
+          xb = 0;
+          xf = xfend;
+          wf = wfend;
+          wb = xf-xb;
+          (*fillRectFun)(x+xb*sx, y+yfend*sy,      wb*sx, 1*sy, bg);
+          (*fillRectFun)(x+xf*sx, y+yfend*sy, bold+wf*sx, 1*sy, fg);
+        }
+        if(yf-yfo>1) {
+          if(yfend<rFont->ht && yfend>yfo) {
+            (*fillRectFun)(x, y+(yfo+1)*sy, chWd*sx, (yfend-yfo-1)*sy, bg);
+            (*fillRectFun)(x, y+(yfend+1)*sy, chWd*sx, (yf-yfend-1)*sy, bg);
+          } else
+            (*fillRectFun)(x, y+(yfo+1)*sy, chWd*sx, (yf-yfo-1)*sy, bg);
+        }
+        (*fillRectFun)(x+(xf+wf)*sx, y+yfo*sy, (chWd-xf-wf)*sx, 1*sy, bg);
+        */
+        
+        // simple but slower
+        for(int yf=0; yf<rFont->ht; yf++) {
+          int xb,wb;
+          xf=wf=0;
+          uint8_t *rects = (uint8_t*)rFont->rects+recIdx*3;
+          for(int i=0; i<recNum; i++) {
+            if(pgm_read_byte(rects+1)==yf) {
+              xb = xf+wf;
+              xf = pgm_read_byte(rects);
+              wf = pgm_read_byte(rects+2)+1;
+              wb = xf-xb;
+              (*fillRectFun)(x+xb*sx, y+yf*sy,      wb*sx, 1*sy, bg);
+              (*fillRectFun)(x+xf*sx, y+yf*sy, bold+wf*sx, 1*sy, fg);
+            }
+            rects+=3;
+          }
+          (*fillRectFun)(x+(xf+wf)*sx, y+yf*sy, (chWd-xf-wf)*sx, 1*sy, bg);
+        }
+        
+        if(wdR>0) (*fillRectFun)(x+chWd*sx, y, wdR*sx, rFont->ht*sy, bg);
+      } else
+#endif // ENABLE_RRE_H24B_BG
       for(int i=0; i<recNum; i++) {
         uint8_t *rects = (uint8_t*)rFont->rects + (i+recIdx)*3;
         xf = pgm_read_byte(&rects[0])-xmin;
@@ -399,27 +597,35 @@ int RREFont::drawChar(int x, int y, unsigned char c)
         (*fillRectFun)(x+xf*sx, y+yf*sy, bold+wf*sx, hf*sy, fg);
       }
       break;
-#endif
-#if ENABLE_RRE_P16B==1
-    case RRE_P16B:
+#endif // ENABLE_RRE_H24B
+
+#if ENABLE_RRE_P8B==1
+    case RRE_P8B: {
+      uint8_t *rects = (uint8_t*)rFont->rects + recIdx;
       for(int i=0; i<recNum; i++) {
-        uint8_t *rects = (uint8_t*)rFont->rects + (i+recIdx)*2;
-        xf = pgm_read_byte(&rects[0])-xmin;
+        yf = pgm_read_byte(&rects[0]);
+        xf = yf&0xf;
+        yf = yf>>4;
+        (*fillRectFun)(x+xf*sx, y+yf*sy, bold+sx, sy, fg);
+        rects++;
+      }
+      }
+      break;
+#endif // ENABLE_RRE_P8B
+
+#if ENABLE_RRE_P16B==1
+    case RRE_P16B: {
+      uint8_t *rects = (uint8_t*)rFont->rects + recIdx*2;
+      for(int i=0; i<recNum; i++) {
+        xf = pgm_read_byte(&rects[0]);
         yf = pgm_read_byte(&rects[1]);
         (*fillRectFun)(x+xf*sx, y+yf*sy, bold+sx, sy, fg);
+        rects+=2;
       }
+      } 
       break;
-#endif
-#if ENABLE_RRE_P8B==1
-    case RRE_P8B:
-      for(int i=0; i<recNum; i++) {
-        uint8_t *rects = (uint8_t*)rFont->rects + (i+recIdx);
-        xf = (pgm_read_byte(&rects[0])&0xf)-xmin;
-        yf = pgm_read_byte(&rects[1])>>4;
-        (*fillRectFun)(x+xf*sx, y+yf*sy, bold+sx, sy, fg);
-      }
-      break;
-#endif
+#endif // ENABLE_RRE_P16B
+
   }
   return (wd+bold)*sx;
 }
@@ -428,7 +634,7 @@ int RREFont::drawChar(int x, int y, unsigned char c)
 int RREFont::strWidth(char *str)
 {
   int wd = 0;
-  while (*str) wd += charWidth(*str++);
+  while (*str) wd += charWidthFull(*str++);
   return wd;
 }
 
@@ -447,7 +653,7 @@ int RREFont::printStr(int xpos, int ypos, char *str)
 
   while(*str) {
     char ch = *str++;
-    int wd = charWidth(ch);
+    int wd = charWidthFull(ch);
     if(ch==10 || cr && x+wd>=scrWd) { 
       x = xpos; 
       y += rFont->ht * sy + spacingY;

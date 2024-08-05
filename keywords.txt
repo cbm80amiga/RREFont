@@ -18,6 +18,7 @@ getHeight	KEYWORD2
 printStr	KEYWORD2
 drawChar	KEYWORD2
 charWidth	KEYWORD2
+charWidthFull	KEYWORD2
 strWidth	KEYWORD2
 setIsNumberFun	KEYWORD2
 setFillRectFun	KEYWORD2

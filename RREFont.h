@@ -22,8 +22,8 @@
 #define ENABLE_RRE_V24B     1
 #define ENABLE_RRE_V24B_BG  1
 #define ENABLE_RRE_H24B     1
-#define ENABLE_RRE_H24B_BG  0
-#define ENABLE_RRE_P8B      0
+#define ENABLE_RRE_H24B_BG  1
+#define ENABLE_RRE_P8B      1
 #define ENABLE_RRE_P16B     1
 // ----------------------------
 
@@ -34,8 +34,8 @@
 #define RRE_V24B    4    // 256x256, vertical   lines (X8Y8W0H8)
 #define RRE_H24B    5    // 256x256, horizontal lines (X8Y8W8H0)
 #define RRE_32B     6    // 256x256, rects (X8Y8W8H8)
-#define RRE_P8B     7    // 16x16,   pixels (X4Y4W0H0)
-#define RRE_P16B    8    // 256x256, pixels (X8Y8W0H0)
+#define RRE_P8B     7    // 16x16,   pixels (X4Y4)
+#define RRE_P16B    8    // 256x256, pixels (X8Y8)
 #define RRE_NO_SORT 0x80 // old fonts not optimized for fast width calculation
 
 #define ALIGN_LEFT    0
@@ -63,8 +63,8 @@ public:
   void setColor(int c) { fg = bg = c; }
   void setColor(int c, int _bg) { fg = c; bg = _bg; }
   void setBold(uint8_t _bold) { bold = _bold; }
-  void setSpacing(uint8_t sp) { spacing = sp; }
-  void setSpacingY(uint8_t sp) { spacingY = sp; }
+  void setSpacing(int8_t sp) { spacing = sp; }
+  void setSpacingY(int8_t sp) { spacingY = sp; }
   void setScale(uint8_t _sx, uint8_t _sy) { sx = _sx; sy = _sy; }
   void setScale(uint8_t s) { sx = sy = s; }
   void setFontMinWd(uint8_t wd) { minCharWd = wd; }
@@ -74,8 +74,8 @@ public:
   int getWidth() { return rFont ? rFont->wd : 0; }
   int getHeight() { return rFont ? rFont->ht : 0; }
   int charWidthNoSort(uint8_t c, int *_xmin);
-  int charWidthOptim(uint8_t c, int *_xmin=0);
-  int charWidth(uint8_t c, int *_xmin=0);
+  int charWidth(uint8_t c);
+  int charWidthFull(uint8_t c);
   int drawChar(int x, int y, unsigned char c);
   int strWidth(char *str);
   int printStr(int xpos, int ypos, char *str);
