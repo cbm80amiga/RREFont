@@ -49,8 +49,8 @@ To avoid flickering draw chars to the buffer in RAM then render it to LCD using 
 - usually such fonts save a lot of memory especially for large fonts (for example 97x104 Times font takes only about 18k of flash instead of 120k bitmap font)
 - RRE fonts can be easily scaled in both directions
 - this library can be used also for rendering bitmaps (which in RRE format use much less memory)
-- special vertical or horizontal lines mode supported for special applications
-- separate pixels mode supported too
+- special vertical or horizontal line mode supported for special applications
+- separate pixel mode supported too
 - the most efficient for large color LCDs
 - there are over 40 various size fonts included
 - antialiased fonts are possible https://github.com/cbm80amiga/ST7735_antialiased_rre_fonts
