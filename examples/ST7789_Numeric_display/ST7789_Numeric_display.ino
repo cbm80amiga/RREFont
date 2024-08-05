@@ -1,37 +1,68 @@
 // ST7789 library example
 // Numeric display - RREFont vs PropFont
-// (c) 2020 Pawel A. Hernik
+// (c) 2020-24 Pawel A. Hernik
 // YouTube videos:
 // https://youtu.be/OOvzmHcou4E 
 // https://youtu.be/-F7EWPt0yIo
 
-/*
- ST7789 240x240 IPS (without CS pin) connections (only 6 wires required):
+// requires RRE Font library:
+// https://github.com/cbm80amiga/RREFont
+// and/or Prop Font library:
+// https://github.com/cbm80amiga/PropFont
 
+/*
+ST7789 240x240 1.3" IPS (without CS pin) - only 4+2 wires required:
  #01 GND -> GND
  #02 VCC -> VCC (3.3V only!)
- #03 SCL -> D13/PA5/SCK
- #04 SDA -> D11/PA7/MOSI
- #05 RES -> D9 /PA0 or any digital
+ #03 SCL -> D13/SCK
+ #04 SDA -> D11/MOSI
+ #05 RES -> D9 /PA0 or any digital (HW RESET is required to properly initialize LCD without CS)
  #06 DC  -> D10/PA1 or any digital
  #07 BLK -> NC
+
+ST7789 240x280 1.69" IPS - only 4+2 wires required:
+ #01 GND -> GND
+ #02 VCC -> VCC (3.3V only!)
+ #03 SCL -> D13/SCK
+ #04 SDA -> D11/MOSI
+ #05 RES -> optional
+ #06 DC  -> D10 or any digital
+ #07 CS  -> D9 or any digital
+ #08 BLK -> VCC
+
+ST7789 170x320 1.9" IPS - only 4+2 wires required:
+ #01 GND -> GND
+ #02 VCC -> VCC (3.3V only!)
+ #03 SCL -> D13/SCK
+ #04 SDA -> D11/MOSI
+ #05 RES -> optional
+ #06 DC  -> D10 or any digital
+ #07 CS  -> D9 or any digital
+ #08 BLK -> VCC
+
+ST7789 240x320 2.0" IPS - only 4+2 wires required:
+ #01 GND -> GND
+ #02 VCC -> VCC (3.3V only!)
+ #03 SCL -> D13/SCK
+ #04 SDA -> D11/MOSI
+ #05 RES -> optional
+ #06 DC  -> D10 or any digital
+ #07 CS  -> D9 or any digital
 */
 
 #include <SPI.h>
 #include <Adafruit_GFX.h>
-#if (__STM32F1__) // bluepill
-#define TFT_DC    PA1
-#define TFT_RST   PA0
-//#include <Arduino_ST7789_STM.h>
-#else
-#define TFT_DC    10
-#define TFT_RST   9
-#include <Arduino_ST7789_Fast.h>
-#endif
+#include "ST7789_AVR.h"
+
+#define TFT_DC   10
+#define TFT_CS    9  // with CS
+#define TFT_RST  -1  // with CS
+//#define TFT_CS  -1 // without CS
+//#define TFT_RST  9 // without CS
 
 #define SCR_WD 240
 #define SCR_HT 240
-Arduino_ST7789 lcd = Arduino_ST7789(TFT_DC, TFT_RST);
+ST7789_AVR lcd = ST7789_AVR(TFT_DC, TFT_RST, TFT_CS);
 
 // define what kind of fonts should be used
 #define USE_RRE_FONTS 1
@@ -42,6 +73,7 @@ Arduino_ST7789 lcd = Arduino_ST7789(TFT_DC, TFT_RST);
 #include "rre_term_10x16.h"
 #include "rre_bold13x20.h"
 #include "rre_bold13x20v.h"
+#include "rre_bold13x20h.h"
 #include "rre_bold13x20no.h"
 
 RREFont font;
@@ -90,6 +122,7 @@ void setBigNumFont()
 {
 #if USE_RRE_FONTS==1
   font.setFont(&rre_Bold13x20v);
+  //font.setFont(&rre_Bold13x20h); // slower
   //font.setFont(&rre_Bold13x20);  // regular RRE rendered with rectangles
   //font.setFont(&rre_Bold13x20no);  // like above but no overlapping
 #else
@@ -123,7 +156,7 @@ void showVal(float v, int x, int y, int w,  int p, uint16_t col)
 {
   setBigNumFont();
   font.setColor(col,BLACK);
-  char txt[10];
+  char txt[w+1];
   dtostrf(v,w,p,txt);
   font.printStr(x,y,txt);
 }
@@ -148,12 +181,12 @@ void constData()
   font.setColor(v2Col); font.printStr(32+120+wv2+3,24+12,"ms");
 }
 
-float v1,v3,v4,v5;
+float v1=0,v3=0,v4=0,v5=0;
 int tm = 0;
 
 void varData()
 {
-  //v1=88.8; v3=8888.8; v4=888.8; v5=8888888.88;
+  //v1=88.8; v3=8888.8; v4=888.8; v5=8888888.88; // const values to test performance
 // PropFont optimizing: noopt=350ms, ff=317ms, 0+ff=298ms, +f0=290ms +0f=277ms
   showVal(v1, 18,0+24, 4,1, v1Col);
   showVal(tm, 32+120,0+24, 3,0, v2Col);
@@ -163,7 +196,7 @@ void varData()
   v1+=1.1; if(v1>99.0) v1=0;
   v3+=10.1; if(v3>9999.0) v3=0;
   v4+=3.3; if(v4>999.0) v4=0;
-  v5+=941340.32; if(v5>=999999999.99) v5=0;
+  v5+=941340.32; if(v5>=999999990.0) v5=0;
 }
 
 void loop()
