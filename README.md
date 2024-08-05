@@ -95,7 +95,7 @@ void setDigitMinWd(uint8_t wd)
 
 int getWidth()
 int getHeight()
-  Returns fong global width/height
+  Returns font global width/height
 int charWidth(uint8_t c, int *_xmin=0)
   Returns the width for the given character
 int strWidth(char *str)
