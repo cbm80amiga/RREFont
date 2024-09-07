@@ -118,7 +118,7 @@ https://www.paypal.me/cbm80amiga
 
 [license-badge]: https://img.shields.io/badge/License-GPLv3-blue.svg
 [license]:       https://choosealicense.com/licenses/gpl-3.0/
-[version]:       https://img.shields.io/badge/Version-1.2.1-green.svg
+[version]:       https://img.shields.io/badge/Version-1.2.2-green.svg
 [hit-count]:     https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fcbm80amiga%2FRREFont&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=hits&edge_flat=false
 [github-issues]: https://img.shields.io/github/issues/cbm80amiga/RREFont.svg
 [issues]:        https://github.com/cbm80amiga/RREFont/issues/
